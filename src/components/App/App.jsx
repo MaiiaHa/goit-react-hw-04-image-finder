@@ -1,6 +1,6 @@
 //================ hooks ==================
-import React, { Component } from 'react';
-import Notiflix from 'notiflix'; // all modules
+import { useState, useEffect } from 'react';
+// import Notiflix from 'notiflix'; // all modules
 import { fetchInput } from '../../api/Api';
 import css from './App.module.css';
 // import { ImSpinner } from 'react-icons/im';
@@ -18,82 +18,68 @@ const Status = {
   REJECTED: 'rejected',
 };
 
-export default class App extends Component {
-  state = {
-    status: Status.IDLE,
-    currentPage: 1,
-    value: '',
-    pictures: [],
-    error: null,
-    totalHits: null,
-  };
+export default function App() {
+  const [value, setValue] = useState('');
+  const [pictures, setPictures] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [status, setStatus] = useState(Status.IDLE);
+  const [totalHits, setTotalHits] = useState(null);
+  const [error, setError] = useState(null);
 
-  async componentDidUpdate(prevProps, prevState, snapshot) {
-    const { value, currentPage } = this.state; // pictures dim
-    //визивається після кожного оновлення тут все через if щоб не зациклити запит
-    // console.log('did update componentDidUpdate');
-
-    const prevInput = prevState.value;
-    const prevPage = prevState.currentPage;
-
-    if (prevInput !== value || prevPage !== currentPage) {
-      this.setState({ status: Status.PENDING });
-
-      try {
-        const { hits, totalHits } = await fetchInput(value, currentPage);
-
-        this.setState(state => ({
-          pictures: [...state.pictures, ...hits],
-          status: Status.RESOLVED,
-          error: null,
-          totalHits,
-        }));
-      } catch (error) {
-        this.setState({ error, status: Status.REJECTED });
-        Notiflix.Notify.failure(error.message);
-      }
+  useEffect(() => {
+    if (!value) {
+      return;
     }
-  }
 
-  onFormSubmit = value => {
-    // записуємо інпут в стейт APP з Searchbar formSubmit
-    if (this.state.value !== value) {
-      this.setState({ value, pictures: [], currentPage: 1 });
+    setStatus(Status.PENDING);
+
+    fetchInput(value, currentPage)
+      .then(({ hits, totalHits }) => {
+        setPictures(pictures => [...pictures, ...hits]);
+        setStatus(Status.RESOLVED);
+        setError(null);
+        setTotalHits(totalHits);
+      })
+      .catch(error => {
+        setError(error);
+        setStatus(Status.REJECTED);
+        // Notiflix.Notify.failure(error.message);
+      });
+  }, [currentPage, value]);
+
+  const onFormSubmit = input => {
+    if (value !== input) {
+      setValue(input);
+      setPictures([]);
+      setCurrentPage(1);
     }
   };
 
-  renderMorePic = () => {
-    this.setState(prevState => {
-      console.log(prevState);
-      return { currentPage: prevState.currentPage + 1 };
-    });
+  const renderMorePic = () => {
+    setCurrentPage(setCurrentPage + 1);
   };
 
-  render() {
-    const { error, status, pictures, totalHits } = this.state; // showModal,
-
-    return (
-      <div className={css.App}>
-        <Searchbar onSubmit={this.onFormSubmit} />
-        {status === Status.IDLE && <div>Please enter your search request</div>}
-        {status === Status.PENDING && (
-          <div className={css.spinner}>
-            {/* <ImSpinner size={32} className="iconSpin" />  */}
-            {/* Loading... */}
-            <Loader />
-          </div>
+  return (
+    <div className={css.App}>
+      <Searchbar onSubmit={onFormSubmit} />
+      {status === Status.IDLE && <div>Please enter your search request</div>}
+      {status === Status.PENDING && (
+        <div className={css.spinner}>
+          {/* <ImSpinner size={32} className="iconSpin" />  */}
+          {/* Loading... */}
+          <Loader />
+        </div>
+      )}
+      {status === Status.REJECTED && <div>{error.message}</div>}
+      <ImageGallery photos={pictures} />
+      {status === Status.RESOLVED &&
+        pictures.length !== totalHits &&
+        pictures.length !== 0 && (
+          <Button aria-label="Load more" onClick={renderMorePic} />
         )}
-        {status === Status.REJECTED && <div>{error.message}</div>}
-        <ImageGallery photos={this.state.pictures} />
-        {status === Status.RESOLVED &&
-          pictures.length !== totalHits &&
-          pictures.length !== 0 && (
-            <Button aria-label="Load more" onClick={this.renderMorePic} />
-          )}
-        {/* <ToastContainer autoClose={3000} /> */}
-      </div>
-    );
-  }
+      {/* <ToastContainer autoClose={3000} /> */}
+    </div>
+  );
 }
 
 //=========================================
