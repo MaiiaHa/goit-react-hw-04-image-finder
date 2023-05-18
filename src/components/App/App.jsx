@@ -9,7 +9,7 @@ import Button from '../Button/Button';
 import Searchbar from '../Searchbar/Searchbar';
 import ImageGallery from '../ImageGallery/ImageGallery';
 import { Loader } from 'components/Loader/Loader';
-// import { ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 const Status = {
   IDLE: 'idle',
@@ -36,13 +36,14 @@ export default function App() {
     fetchInput(value, currentPage)
       .then(({ hits, totalHits }) => {
         setPictures(pictures => [...pictures, ...hits]);
-        setStatus(Status.RESOLVED);
         setError(null);
         setTotalHits(totalHits);
+        setStatus(Status.RESOLVED);
       })
       .catch(error => {
         setError(error);
         setStatus(Status.REJECTED);
+        toast.error('Error');
         // Notiflix.Notify.failure(error.message);
       });
   }, [currentPage, value]);
