@@ -1,6 +1,6 @@
 //================ hooks ==================
 import { useState, useEffect } from 'react';
-// import Notiflix from 'notiflix'; // all modules
+import Notiflix from 'notiflix'; // all modules
 import { fetchInput } from '../../api/Api';
 import css from './App.module.css';
 // import { ImSpinner } from 'react-icons/im';
@@ -9,7 +9,7 @@ import Button from '../Button/Button';
 import Searchbar from '../Searchbar/Searchbar';
 import ImageGallery from '../ImageGallery/ImageGallery';
 import { Loader } from 'components/Loader/Loader';
-import { toast } from 'react-toastify';
+// import { toast } from 'react-toastify';
 
 const Status = {
   IDLE: 'idle',
@@ -34,17 +34,23 @@ export default function App() {
     setStatus(Status.PENDING);
 
     fetchInput(value, currentPage)
-      .then(({ hits, totalHits }) => {
+      .then(({ hits, total, totalHits }) => {
+        if (totalHits === 0) {
+          Notiflix.Notify.failure(
+            'There is no images for this request. Please enter your new search request.'
+          );
+        }
         setPictures(pictures => [...pictures, ...hits]);
         setError(null);
         setTotalHits(totalHits);
         setStatus(Status.RESOLVED);
+        Notiflix.Notify.success(`We found ${total} images`);
       })
       .catch(error => {
         setError(error);
         setStatus(Status.REJECTED);
-        toast.error('Error');
-        // Notiflix.Notify.failure(error.message);
+        // toast.error('Error');
+        Notiflix.Notify.failure(error.message);
       });
   }, [currentPage, value]);
 
@@ -57,7 +63,7 @@ export default function App() {
   };
 
   const renderMorePic = () => {
-    setCurrentPage(setCurrentPage + 1);
+    setCurrentPage(currentPage + 1);
   };
 
   return (
