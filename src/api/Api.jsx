@@ -21,5 +21,3 @@ export async function fetchInput(searchInput, currentPage) {
   // console.log(data); //{total: 19498, totalHits: 500, hits: Array(12)}
   return data;
 }
-
-// https://pixabay.com/api/?q=cat&page=1&key=your_key&image_type=photo&orientation=horizontal&per_page=12
